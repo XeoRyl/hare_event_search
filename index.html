@@ -542,11 +542,11 @@
                     if (this.excludeKeywords) {
                         queryParams.append('exclude_keywords', this.excludeKeywords);
                     }
+                    queryParams.append('show_weekdays', this.showWeekdays ? 'true' : 'false');
+                    queryParams.append('show_weekends', this.showWeekends ? 'true' : 'false');
 
                     const newUrl = `${window.location.origin}${window.location.pathname}?${queryParams.toString()}`;
                     window.history.pushState({ path: newUrl }, '', newUrl);
-                    queryParams.append('show_weekdays', this.showWeekdays ? 'true' : 'false');
-                    queryParams.append('show_weekends', this.showWeekends ? 'true' : 'false');
                 },
                 scrollToTop() {
                     window.scrollTo({
