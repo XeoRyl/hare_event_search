@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hareruya Events</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+        .header {
+            background-color: #343a40;
+            color: #fff;
+            padding: 14px;
+            text-align: center;
+        }
+        .header h2 {
+            font-size: 1.8rem;
+            margin: 0;
+        }
+        .search-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 999;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+        .search-btn:hover {
+            transform: scale(1.1);
+        }
+        .search-btn i {
+            font-size: 24px;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 24px;
+        }
+        .date-header {
+            color: #fff;
+            padding: 8px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+            font-size: 1.2rem;
+        }
+        .date-header-saturday {
+            background-color: #4e73df;
+        }
+        .date-header-sunday {
+            background-color: #e74a3b;
+        }
+        .date-header-weekday {
+            background-color: #6c757d;
+        }
+        .event-table {
+            background-color: #fff;
+            border-radius: 0 0 5px 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .event-table th {
+            background-color: #f1f1f1;
+        }
+        .event-table td {
+            vertical-align: middle;
+        }
+        .event-link {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .event-link:hover {
+            text-decoration: underline;
+        }
+        .modal-body {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .modal-footer {
+            justify-content: space-between;
+        }
+        .label {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <h2>イベント検索</h2>
+        </header>
+        <div class="container mt-4">
+            <button class="search-btn" @click="openModal">
+                <i class="fas fa-search"></i>
+            </button>
+            <div class="loading-overlay" v-if="loading">
+                <div class="spinner-border text-light" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+            <div v-for="(eventGroup, date) in groupedEvents" :key="date" class="mb-4">
+                <div :class="['date-header', 'd-flex', 'align-items-center', 'justify-content-center', getDateHeaderClass(new Date(date))]">
+                    <h3 class="mb-0">{{ formatDate(new Date(date)) }}</h3>
+                </div>
+                <table class="table event-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">時間</th>
+                            <th scope="col">イベント</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="event in eventGroup" :key="event.id">
+                            <td class="text-nowrap">{{ event.shop_name.replace('トーナメントセンター ', 'TC') }}<br>{{ event.event_time }}</td>
+                            <td><a :href="event.event_url" target="_blank" class="event-link">{{ event.event_name }}</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal fade" id="searchModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-scrollable" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">検索条件</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="label">ショップ選択</label>
+                            <div class="form-group">
+                                <div class="form-check" v-for="(name, code) in formattedShops" :key="code">
+                                    <input class="form-check-input" type="checkbox" v-model="selectedShops" :value="code" :id="'shop-' + code">
+                                    <label class="form-check-label" :for="'shop-' + code">{{ name }}</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="label">表示期間選択</label>
+                            <select class="form-control" v-model="dateInterval">
+                                <option value="7">7日間</option>
+                                <option value="14">14日間</option>
+                                <option value="30">30んち巻</option>
+                                <option value="60">全期間</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="label">フォーマット選択</label>
+                            <select class="form-control" v-model="selectedFormat">
+                                <option value="">すべて</option>
+                                <option v-for="format in formats" :key="format.value" :value="format.value">{{ format.label }}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="label">イベント名称</label>
+                            <input type="text" class="form-control" v-model="eventName">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">閉じる</button>
+                        <button type="button" class="btn btn-primary" @click="searchEvents">検索</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                shops: {},
+                selectedShops: [],
+                dateInterval: '7',
+                formats: [
+                    { value: 'St', label: 'スタンダード' },
+                    { value: 'Pi', label: 'パイオニア' },
+                    { value: 'Mo', label: 'モダン' },
+                    { value: 'Le', label: 'レガシー' },
+                    { value: 'Vi', label: 'ヴィンテージ' },
+                    { value: 'Co', label: '統率者' }
+                ],
+                selectedFormat: '',
+                eventName: '',
+                events: [],
+                loading: false
+            },
+            computed: {
+                formattedShops() {
+                    const formatted = {};
+                    for (const [code, name] of Object.entries(this.shops)) {
+                        formatted[code] = name.replace('トーナメントセンター ', 'TC');
+                    }
+                    return formatted;
+                },
+                groupedEvents() {
+                    const grouped = {};
+                    const sortedEvents = this.events.slice().sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
+                    for (const event of sortedEvents) {
+                        const date = event.event_date;
+                        if (!grouped[date]) {
+                            grouped[date] = [];
+                        }
+                        grouped[date].push(event);
+                    }
+                    return grouped;
+                }
+            },
+            created() {
+                this.fetchShops();
+                this.loadQueryParams();
+            },
+            methods: {
+                openModal() {
+                    $('#searchModal').modal('show');
+                },
+                fetchShops() {
+                    axios.get('https://hare-api-server.onrender.com/shops')
+                        .then(response => {
+                            this.shops = response.data;
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                },
+                searchEvents() {
+                    this.loading = true;
+                    const params = new URLSearchParams();
+                    this.selectedShops.forEach(shop => params.append('shop_code', shop));
+                    params.append('date_interval', this.dateInterval);
+                    if (this.selectedFormat) {
+                        params.append('format', this.selectedFormat);
+                    }
+                    if (this.eventName) {
+                        params.append('event_name', this.eventName);
+                    }
+
+                    axios.get('https://hare-api-server.onrender.com/events', { params: params })
+                        .then(response => {
+                            this.events = response.data;
+                            this.updateQueryParams();
+                            $('#searchModal').modal('hide');
+                            this.scrollToTop(); // 追加
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        })
+                        .finally(() => {
+                            this.loading = false;
+                        });
+                },
+                formatDate(date) {
+                    const year = date.getFullYear();
+                    const month = date.getMonth() + 1;
+                    const day = date.getDate();
+                    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+                    const weekday = weekdays[date.getDay()];
+                    return `${month}月${day}日（${weekday}）`;
+                },
+                getDateHeaderClass(date) {
+                    const dayOfWeek = date.getDay();
+                    if (dayOfWeek === 0) {
+                        return 'date-header-sunday';
+                    } else if (dayOfWeek === 6) {
+                        return 'date-header-saturday';
+                    } else {
+                        return 'date-header-weekday';
+                    }
+                },
+                loadQueryParams() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    this.selectedShops = urlParams.getAll('shop_code');
+                    this.dateInterval = urlParams.get('date_interval') || '7';
+                    this.selectedFormat = urlParams.get('format') || '';
+                    this.eventName = urlParams.get('event_name') || '';
+
+                    if (this.selectedShops.length > 0 || this.selectedFormat || this.eventName) {
+                        this.searchEvents();
+                    }
+                },
+                updateQueryParams() {
+                    const queryParams = new URLSearchParams();
+                    this.selectedShops.forEach(shop => {
+                        queryParams.append('shop_code', shop);
+                    });
+                    queryParams.append('date_interval', this.dateInterval);
+                    if (this.selectedFormat) {
+                        queryParams.append('format', this.selectedFormat);
+                    }
+                    if (this.eventName) {
+                        queryParams.append('event_name', this.eventName);
+                    }
+                    const newUrl = `${window.location.origin}${window.location.pathname}?${queryParams.toString()}`;
+                    window.history.pushState({ path: newUrl }, '', newUrl);
+                },
+                scrollToTop() {
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
