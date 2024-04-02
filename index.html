@@ -307,8 +307,12 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="label">イベント名称</label>
+                            <label class="label">必須キーワード（複数可 / OR検索）</label>
                             <input type="text" class="form-control" v-model="eventName">
+                        </div>
+                        <div class="mb-3">
+                            <label class="label">除外キーワード（複数可 / OR検索）</label>
+                            <input type="text" class="form-control" v-model="excludeKeywords">
                         </div>
                     </div>
 
@@ -358,6 +362,7 @@
                 selectedPreset: '',
                 isFavoritePreset: false,
                 showFavoriteManagement: false,
+                excludeKeywords: '',
                 showWeekdays: true,
                 showWeekends: true,
                 loading: false
@@ -473,6 +478,9 @@
                     if (this.showWeekends) {
                         params.append('show_weekends', 'true');
                     }
+                    if (this.excludeKeywords) {
+                        params.append('exclude_keywords', this.excludeKeywords);
+                    }
 
                     axios.get('https://hare-api-server.onrender.com/events', { params: params })
                         .then(response => {
@@ -513,6 +521,7 @@
                     this.eventName = urlParams.get('event_name') || '';
                     this.showWeekdays = urlParams.get('show_weekdays') !== 'false';
                     this.showWeekends = urlParams.get('show_weekends') !== 'false';
+                    this.excludeKeywords = urlParams.get('exclude_keywords') || '';
 
                     if (this.selectedShops.length > 0 || this.selectedFormat || this.eventName) {
                         this.searchEvents();
@@ -530,6 +539,10 @@
                     if (this.eventName) {
                         queryParams.append('event_name', this.eventName);
                     }
+                    if (this.excludeKeywords) {
+                        queryParams.append('exclude_keywords', this.excludeKeywords);
+                    }
+
                     const newUrl = `${window.location.origin}${window.location.pathname}?${queryParams.toString()}`;
                     window.history.pushState({ path: newUrl }, '', newUrl);
                     queryParams.append('show_weekdays', this.showWeekdays ? 'true' : 'false');
