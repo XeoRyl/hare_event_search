@@ -10,7 +10,9 @@
         html {
         height: 100%;
         }
-
+        .event-table th:first-child {
+            max-width: 150px; /* 適切な幅に調整してください */
+        }
         body {
             display: flex;
             flex-direction: column;
@@ -219,13 +221,13 @@
                 <table class="table event-table">
                     <thead>
                         <tr>
-                            <th scope="col">時間</th>
+                            <th scope="col" class="mw-100">時間</th>
                             <th scope="col">イベント</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="event in eventGroup" :key="event.id">
-                            <td class="text-nowrap">{{ event.shop_name.replace('トーナメントセンター ', 'TC') }}<br>{{ event.event_time }}</td>
+                            <td style="width: 10%" class="text-nowrap mw-100">{{ event.shop_name.replace('トーナメントセンター ', 'TC') }}<br>{{ event.event_time }}</td>
                             <td><a :href="event.event_url" target="_blank" class="event-link">{{ event.event_name }}</a></td>
                         </tr>
                     </tbody>
