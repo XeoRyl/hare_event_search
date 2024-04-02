@@ -140,6 +140,7 @@
         <header class="header">
             <h2><a href="#" class="text-reset text-decoration-none" @click="resetSearch">イベント検索</a></h2>
         </header>
+
         <div class="container mt-4">
             <button class="search-btn" @click="openModal">
                 <i class="fas fa-search"></i>
@@ -215,7 +216,7 @@
 
             </div>
             <div v-for="(eventGroup, date) in groupedEvents" :key="date" class="mb-4">
-                <div :class="['date-header', 'd-flex', 'align-items-center', 'justify-content-center', getDateHeaderClass(new Date(date))]">
+                <div :class="['date-header', 'd-flex', 'align-items-center', 'justify-content-center', getDateHeaderClass(eventGroup[0])]">
                     <h3 class="mb-0">{{ formatDate(new Date(date)) }}</h3>
                 </div>
                 <table class="table event-table">
@@ -234,15 +235,18 @@
                 </table>
             </div>
         </div>
+
         <div class="modal fade" id="searchModal" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-dialog-scrollable" role="document">
                 <div class="modal-content">
+
                     <div class="modal-header">
                         <h5 class="modal-title">検索条件</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
+
                     <div class="modal-body">
 
                         <!-- お気に入りが1つ以上ある場合にのみ表示 -->
@@ -270,6 +274,22 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- 追加 -->
+                        <div class="mb-3">
+                            <label class="label">イベントの種類</label>
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" v-model="showWeekdays" id="show-weekdays">
+                                    <label class="form-check-label" for="show-weekdays">平日のイベントを表示する</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" v-model="showWeekends" id="show-weekends">
+                                    <label class="form-check-label" for="show-weekends">土日祝日のイベントを表示する</label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label class="label">表示期間選択</label>
                             <select class="form-control" v-model="dateInterval">
@@ -291,13 +311,16 @@
                             <input type="text" class="form-control" v-model="eventName">
                         </div>
                     </div>
+
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">閉じる</button>
                         <button type="button" class="btn btn-primary" @click="searchEvents">検索</button>
                     </div>
+
                 </div>
             </div>
         </div>
+
         <footer class="footer bg-dark text-white text-center py-3">
             <div class="container">
                 <span>当サイトは、株式会社晴れる屋様とは一切関係ありません。<br>
@@ -311,6 +334,7 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
         new Vue({
             el: '#app',
@@ -334,6 +358,8 @@
                 selectedPreset: '',
                 isFavoritePreset: false,
                 showFavoriteManagement: false,
+                showWeekdays: true,
+                showWeekends: true,
                 loading: false
             },
             computed: {
@@ -441,6 +467,13 @@
                         params.append('event_name', this.eventName);
                     }
 
+                    if (this.showWeekdays) {
+                        params.append('show_weekdays', 'true');
+                    }
+                    if (this.showWeekends) {
+                        params.append('show_weekends', 'true');
+                    }
+
                     axios.get('https://hare-api-server.onrender.com/events', { params: params })
                         .then(response => {
                             this.events = response.data;
@@ -463,11 +496,10 @@
                     const weekday = weekdays[date.getDay()];
                     return `${month}月${day}日（${weekday}）`;
                 },
-                getDateHeaderClass(date) {
-                    const dayOfWeek = date.getDay();
-                    if (dayOfWeek === 0) {
+                getDateHeaderClass(event) {
+                    if (event.bg_color === "red") {
                         return 'date-header-sunday';
-                    } else if (dayOfWeek === 6) {
+                    } else if (event.bg_color === "blue") {
                         return 'date-header-saturday';
                     } else {
                         return 'date-header-weekday';
@@ -479,6 +511,8 @@
                     this.dateInterval = urlParams.get('date_interval') || '7';
                     this.selectedFormat = urlParams.get('format') || '';
                     this.eventName = urlParams.get('event_name') || '';
+                    this.showWeekdays = urlParams.get('show_weekdays') !== 'false';
+                    this.showWeekends = urlParams.get('show_weekends') !== 'false';
 
                     if (this.selectedShops.length > 0 || this.selectedFormat || this.eventName) {
                         this.searchEvents();
@@ -498,6 +532,8 @@
                     }
                     const newUrl = `${window.location.origin}${window.location.pathname}?${queryParams.toString()}`;
                     window.history.pushState({ path: newUrl }, '', newUrl);
+                    queryParams.append('show_weekdays', this.showWeekdays ? 'true' : 'false');
+                    queryParams.append('show_weekends', this.showWeekends ? 'true' : 'false');
                 },
                 scrollToTop() {
                     window.scrollTo({
