@@ -408,7 +408,6 @@
                 saveFavoritePreset() {
                     const presetName = prompt('お気に入りの名前を入力してください');
                     if (presetName) {
-                        // 既存のお気に入りと同じ名前かどうかをチェック
                         const existingPreset = this.favoritePresets.find(preset => preset.name === presetName);
                         if (existingPreset) {
                             alert('すでに存在する名前では保存できません。');
@@ -421,6 +420,9 @@
                                 dateInterval: this.dateInterval,
                                 format: this.selectedFormat,
                                 eventName: this.eventName,
+                                excludeKeywords: this.excludeKeywords,
+                                showWeekdays: this.showWeekdays,
+                                showWeekends: this.showWeekends,
                                 url: window.location.href
                             };
                             this.favoritePresets.push(preset);
@@ -430,13 +432,6 @@
                         }
                     }
                 },
-                removeFavoritePreset() {
-                    const currentUrl = window.location.href;
-                    this.favoritePresets = this.favoritePresets.filter(preset => preset.url !== currentUrl);
-                    localStorage.setItem('favoritePresets', JSON.stringify(this.favoritePresets));
-                    this.isFavoritePreset = false;
-                    alert('お気に入りから削除しました。');
-                },
                 loadFavoritePreset() {
                     const preset = this.favoritePresets.find(p => p.name === this.selectedPreset);
                     if (preset) {
@@ -444,8 +439,16 @@
                         this.dateInterval = preset.dateInterval;
                         this.selectedFormat = preset.format;
                         this.eventName = preset.eventName;
+                        this.excludeKeywords = preset.excludeKeywords || '';
                         this.searchEvents();
                     }
+                },
+                removeFavoritePreset() {
+                    const currentUrl = window.location.href;
+                    this.favoritePresets = this.favoritePresets.filter(preset => preset.url !== currentUrl);
+                    localStorage.setItem('favoritePresets', JSON.stringify(this.favoritePresets));
+                    this.isFavoritePreset = false;
+                    alert('お気に入りから削除しました。');
                 },
                 openModal() {
                     $('#searchModal').modal('show');
