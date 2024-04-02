@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" xmlns:v-bind="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,6 +40,9 @@
         }
         .search-btn i {
             font-size: 24px;
+        }
+        .copy-link:hover {
+            text-decoration: underline;
         }
         .loading-overlay {
             position: fixed;
@@ -100,6 +103,9 @@
             font-weight: bold;
             margin-bottom: 0.5rem;
         }
+        .copy-link {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -115,6 +121,13 @@
                 <div class="spinner-border text-light" role="status">
                     <span class="sr-only">Loading...</span>
                 </div>
+            </div>
+            <div v-if="events.length > 0">
+                <p class="mb-3">
+                    <span class="copy-link text-info" style="cursor: pointer;" @click="copySearchUrl" @mouseover="hover = true" @mouseleave="hover = false">
+                        <i class="fas fa-clipboard" v-bind:class="{ 'text-secondary': hover }"></i> この条件の検索結果URLをコピー
+                    </span>
+                </p>
             </div>
             <div v-for="(eventGroup, date) in groupedEvents" :key="date" class="mb-4">
                 <div :class="['date-header', 'd-flex', 'align-items-center', 'justify-content-center', getDateHeaderClass(new Date(date))]">
@@ -160,7 +173,7 @@
                             <select class="form-control" v-model="dateInterval">
                                 <option value="7">7日間</option>
                                 <option value="14">14日間</option>
-                                <option value="30">30んち巻</option>
+                                <option value="30">30日間</option>
                                 <option value="60">全期間</option>
                             </select>
                         </div>
@@ -196,6 +209,7 @@
                 shops: {},
                 selectedShops: [],
                 dateInterval: '7',
+                hover: false,
                 formats: [
                     { value: 'St', label: 'スタンダード' },
                     { value: 'Pi', label: 'パイオニア' },
@@ -322,6 +336,33 @@
                         top: 0,
                         behavior: 'smooth'
                     });
+                },
+                copySearchUrl() {
+                    const currentUrl = window.location.href;
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(currentUrl)
+                            .then(() => {
+                                this.showCopyNotification();
+                            })
+                            .catch(error => {
+                                console.error('URLのコピーに失敗しました', error);
+                                this.copySearchUrlFallback(currentUrl);
+                            });
+                    } else {
+                        this.copySearchUrlFallback(currentUrl);
+                    }
+                },
+                copySearchUrlFallback(url) {
+                    const tempInput = document.createElement('input');
+                    tempInput.value = url;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempInput);
+                    this.showCopyNotification();
+                },
+                showCopyNotification() {
+                    alert('URLをコピーしました。');
                 }
             }
         });
