@@ -585,12 +585,17 @@
                     this.dateInterval = '7';
                     this.selectedFormat = '';
                     this.eventName = '';
+                    this.excludeKeywords = ''; // 除外キーワードをリセット
+                    this.showWeekdays = true; // 平日のイベントを表示する状態をリセット
+                    this.showWeekends = true; // 土日祝日のイベントを表示する状態をリセット
                     this.events = [];
                     this.selectedPreset = ''; // お気に入りの選択状態を初期化
-                    // URLを更新
+
+                    // URLを更新してクエリパラメータをクリア
                     const newUrl = window.location.pathname;
                     window.history.pushState({ path: newUrl }, '', newUrl);
-                    // ここでイベントを再取得するなどの処理が必要なら追加
+
+                    // 必要に応じてイベントリストを再取得
                     this.fetchShops();
                 },
                 showCopyNotification() {
