@@ -148,18 +148,69 @@
                 </div>
             </div>
             <div v-if="events.length == 0">
-                <p class="mb-3">
+                <p class="mb-3" v-if="favoritePresets.length == 0">
                     <span class="h4 text-primary">
                         右下のボタンから<br>検索条件を指定してください。
                     </span>
                 </p>
+
+                <!-- お気に入りが1つ以上ある場合にのみ表示 -->
+                <template v-if="favoritePresets.length > 0">
+                    <!-- お気に入りの選択ドロップダウン -->
+                    <div class="mb-3">
+                        <label class="label">お気に入りから選択</label>
+                        <select class="form-control" v-model="selectedPreset" @change="loadFavoritePreset">
+                            <option value="">選択してください</option>
+                            <option v-for="preset in favoritePresets" :key="preset.name" :value="preset.name">
+                                {{ preset.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- お気に入りの管理セクション -->
+                    <div class="mt-4">
+                        <div class="card">
+                            <div class="card-header" @click="toggleFavoriteManagement">
+                                <h6 class="mb-0">
+                                    <a href="#" class="d-block text-decoration-none" role="button">
+                                        お気に入りの管理
+                                        <i class="fas" :class="{'fa-chevron-down': !showFavoriteManagement, 'fa-chevron-up': showFavoriteManagement}"></i>
+                                    </a>
+                                </h6>
+                            </div>
+                            <div class="collapse" :class="{'show': showFavoriteManagement}">
+                                <div class="card-body">
+                                    <ul class="list-group">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center" v-for="preset in favoritePresets" :key="preset.name">
+                                            {{ preset.name }}
+                                            <button class="btn btn-danger btn-sm" @click="removePreset(preset)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                    <button class="btn btn-danger mt-3" @click="clearAllPresets" v-if="favoritePresets.length > 0">すべてのお気に入りを削除</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </template>
+
             </div>
             <div v-if="events.length > 0">
-                <p class="mb-3">
-                    <span class="copy-link text-info" style="cursor: pointer;" @click="copySearchUrl" @mouseover="hover = true" @mouseleave="hover = false">
-                        <i class="fas fa-clipboard" v-bind:class="{ 'text-secondary': hover }"></i> この条件の検索結果URLをコピー
-                    </span>
-                </p>
+<!--                <p class="mb-3">-->
+<!--                    <span class="copy-link text-info" style="cursor: pointer;" @click="copySearchUrl" @mouseover="hover = true" @mouseleave="hover = false">-->
+<!--                        <i class="fas fa-clipboard" v-bind:class="{ 'text-secondary': hover }"></i> この条件の検索結果URLをコピー-->
+<!--                    </span>-->
+<!--                </p>-->
+
+                <!-- お気に入りの保存ボタンを追加 -->
+                <div v-if="events.length > 0" class="text-left mb-3">
+                    <button @click="toggleFavoritePreset" :class="['btn', isFavoritePreset ? 'btn-danger' : 'btn-success']">
+                        <i class="fas fa-star"></i> {{ isFavoritePreset ? 'お気に入りから削除' : 'お気に入りに保存' }}
+                    </button>
+                </div>
+
             </div>
             <div v-for="(eventGroup, date) in groupedEvents" :key="date" class="mb-4">
                 <div :class="['date-header', 'd-flex', 'align-items-center', 'justify-content-center', getDateHeaderClass(new Date(date))]">
@@ -191,6 +242,23 @@
                         </button>
                     </div>
                     <div class="modal-body">
+
+                        <!-- お気に入りが1つ以上ある場合にのみ表示 -->
+                        <template v-if="favoritePresets.length > 0">
+                            <!-- お気に入りの選択ドロップダウン -->
+                            <div class="mb-3">
+                                <label class="label">お気に入りから選択</label>
+                                <select class="form-control" v-model="selectedPreset" @change="loadFavoritePreset">
+                                    <option value="">選択してください</option>
+                                    <option v-for="preset in favoritePresets" :key="preset.name" :value="preset.name">
+                                        {{ preset.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <hr>
+                        </template>
+
                         <div class="mb-3">
                             <label class="label">ショップ選択</label>
                             <div class="form-group">
@@ -260,6 +328,10 @@
                 selectedFormat: '',
                 eventName: '',
                 events: [],
+                favoritePresets: [],
+                selectedPreset: '',
+                isFavoritePreset: false,
+                showFavoriteManagement: false,
                 loading: false
             },
             computed: {
@@ -286,8 +358,62 @@
             created() {
                 this.fetchShops();
                 this.loadQueryParams();
+                const storedPresets = localStorage.getItem('favoritePresets');
+                if (storedPresets) {
+                    this.favoritePresets = JSON.parse(storedPresets);
+                }
+                this.updateFavoritePresetStatus();
             },
             methods: {
+                toggleFavoritePreset() {
+                    if (this.isFavoritePreset) {
+                        this.removeFavoritePreset();
+                    } else {
+                        this.saveFavoritePreset();
+                    }
+                },
+                saveFavoritePreset() {
+                    const presetName = prompt('お気に入りの名前を入力してください');
+                    if (presetName) {
+                        // 既存のお気に入りと同じ名前かどうかをチェック
+                        const existingPreset = this.favoritePresets.find(preset => preset.name === presetName);
+                        if (existingPreset) {
+                            alert('すでに存在する名前では保存できません。');
+                            // 再帰的に saveFavoritePreset メソッドを呼び出して、名前の入力をやり直させる
+                            this.saveFavoritePreset();
+                        } else {
+                            const preset = {
+                                name: presetName,
+                                shops: this.selectedShops,
+                                dateInterval: this.dateInterval,
+                                format: this.selectedFormat,
+                                eventName: this.eventName,
+                                url: window.location.href
+                            };
+                            this.favoritePresets.push(preset);
+                            localStorage.setItem('favoritePresets', JSON.stringify(this.favoritePresets));
+                            this.isFavoritePreset = true;
+                            alert('お気に入りを保存しました。');
+                        }
+                    }
+                },
+                removeFavoritePreset() {
+                    const currentUrl = window.location.href;
+                    this.favoritePresets = this.favoritePresets.filter(preset => preset.url !== currentUrl);
+                    localStorage.setItem('favoritePresets', JSON.stringify(this.favoritePresets));
+                    this.isFavoritePreset = false;
+                    alert('お気に入りから削除しました。');
+                },
+                loadFavoritePreset() {
+                    const preset = this.favoritePresets.find(p => p.name === this.selectedPreset);
+                    if (preset) {
+                        this.selectedShops = preset.shops;
+                        this.dateInterval = preset.dateInterval;
+                        this.selectedFormat = preset.format;
+                        this.eventName = preset.eventName;
+                        this.searchEvents();
+                    }
+                },
                 openModal() {
                     $('#searchModal').modal('show');
                 },
@@ -302,6 +428,7 @@
                 },
                 searchEvents() {
                     this.loading = true;
+                    this.selectedPreset = '';
                     const params = new URLSearchParams();
                     this.selectedShops.forEach(shop => params.append('shop_code', shop));
                     params.append('date_interval', this.dateInterval);
@@ -402,11 +529,13 @@
                 },
                 resetSearch() {
                     // クエリパラメータをクリアし、データを初期状態に戻す
+                    this.showFavoriteManagement = false;
                     this.selectedShops = [];
                     this.dateInterval = '7';
                     this.selectedFormat = '';
                     this.eventName = '';
                     this.events = [];
+                    this.selectedPreset = ''; // お気に入りの選択状態を初期化
                     // URLを更新
                     const newUrl = window.location.pathname;
                     window.history.pushState({ path: newUrl }, '', newUrl);
@@ -415,6 +544,33 @@
                 },
                 showCopyNotification() {
                     alert('URLをコピーしました。');
+                },
+                updateFavoritePresetStatus() {
+                    const currentUrl = window.location.href;
+                    this.isFavoritePreset = this.favoritePresets.some(preset => preset.url === currentUrl);
+                },
+                removePreset(preset) {
+                    const index = this.favoritePresets.findIndex(p => p.name === preset.name);
+                    if (index !== -1) {
+                        this.favoritePresets.splice(index, 1);
+                        localStorage.setItem('favoritePresets', JSON.stringify(this.favoritePresets));
+                        alert('お気に入りを削除しました。');
+                    }
+                },
+                toggleFavoriteManagement() {
+                    this.showFavoriteManagement = !this.showFavoriteManagement;
+                },
+                clearAllPresets() {
+                    if (confirm('すべてのお気に入りを削除しますか？')) {
+                        this.favoritePresets = [];
+                        localStorage.removeItem('favoritePresets');
+                        alert('すべてのお気に入りを削除しました。');
+                    }
+                }
+            },
+            watch: {
+                events() {
+                    this.updateFavoritePresetStatus();
                 }
             }
         });
