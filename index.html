@@ -111,7 +111,7 @@
 <body>
     <div id="app">
         <header class="header">
-            <h2>イベント検索</h2>
+            <h2><a href="#" class="text-reset text-decoration-none" @click="resetSearch">イベント検索</a></h2>
         </header>
         <div class="container mt-4">
             <button class="search-btn" @click="openModal">
@@ -121,6 +121,13 @@
                 <div class="spinner-border text-light" role="status">
                     <span class="sr-only">Loading...</span>
                 </div>
+            </div>
+            <div v-if="events.length == 0">
+                <p class="mb-3">
+                    <span class="h4 text-primary">
+                        右下のボタンから<br>検索条件を指定してください。
+                    </span>
+                </p>
             </div>
             <div v-if="events.length > 0">
                 <p class="mb-3">
@@ -360,6 +367,19 @@
                     document.execCommand('copy');
                     document.body.removeChild(tempInput);
                     this.showCopyNotification();
+                },
+                resetSearch() {
+                    // クエリパラメータをクリアし、データを初期状態に戻す
+                    this.selectedShops = [];
+                    this.dateInterval = '7';
+                    this.selectedFormat = '';
+                    this.eventName = '';
+                    this.events = [];
+                    // URLを更新
+                    const newUrl = window.location.pathname;
+                    window.history.pushState({ path: newUrl }, '', newUrl);
+                    // ここでイベントを再取得するなどの処理が必要なら追加
+                    this.fetchShops();
                 },
                 showCopyNotification() {
                     alert('URLをコピーしました。');
