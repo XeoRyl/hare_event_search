@@ -340,9 +340,18 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // Vue インスタンスを作成する前にグローバル設定を定義
+        const API_CONFIG = {
+            baseUrl: window.API_BASE_URL || 'https://m-001-00000-core-server-8117ee304f2e.herokuapp.com/api',
+            headers: {
+                'M-001-API-Key': 'dummy_key_hard_watching'
+            }
+        };
         new Vue({
             el: '#app',
             data: {
+                apiBaseUrl: API_CONFIG.baseUrl,
+                apiHeaders: API_CONFIG.headers,
                 shops: {},
                 selectedShops: [],
                 dateInterval: '7',
@@ -457,7 +466,7 @@
                     $('#searchModal').modal('show');
                 },
                 fetchShops() {
-                    axios.get('https://hare-api-server.onrender.com/shops')
+                    axios.get(`${this.apiBaseUrl}/shops`, {headers: this.apiHeaders})
                         .then(response => {
                             this.shops = response.data;
                         })
@@ -487,8 +496,7 @@
                     if (this.excludeKeywords) {
                         params.append('exclude_keywords', this.excludeKeywords);
                     }
-
-                    axios.get('https://hare-api-server.onrender.com/events', { params: params })
+                    axios.get(`${this.apiBaseUrl}/events`, { params: params, headers: this.apiHeaders })
                         .then(response => {
                             this.events = response.data;
                             this.updateQueryParams();
