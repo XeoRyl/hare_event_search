@@ -344,7 +344,7 @@
         const API_CONFIG = {
             baseUrl: window.API_BASE_URL || 'https://m-001-00000-core-server-8117ee304f2e.herokuapp.com/api',
             headers: {
-                'M-001-API-Key': 'dummy_key_hard_watching'
+                'M-001-API-Key': 'gest-key-0-4G7K2M9P'
             }
         };
         new Vue({
@@ -466,7 +466,7 @@
                     $('#searchModal').modal('show');
                 },
                 fetchShops() {
-                    axios.get(`${this.apiBaseUrl}/shops`, {headers: this.apiHeaders})
+                    axios.get(`${this.apiBaseUrl}/events/shops`, {headers: this.apiHeaders})
                         .then(response => {
                             this.shops = response.data;
                         })
@@ -496,7 +496,7 @@
                     if (this.excludeKeywords) {
                         params.append('exclude_keywords', this.excludeKeywords);
                     }
-                    axios.get(`${this.apiBaseUrl}/events`, { params: params, headers: this.apiHeaders })
+                    axios.get(`${this.apiBaseUrl}/events/search`, { params: params, headers: this.apiHeaders })
                         .then(response => {
                             this.events = response.data;
                             this.updateQueryParams();
