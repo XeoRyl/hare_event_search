@@ -485,12 +485,9 @@
                         params.append('event_keywords', this.eventName);
                     }
 
-                    if (this.showWeekdays) {
-                        params.append('show_weekdays', 'true');
-                    }
-                    if (this.showWeekends) {
-                        params.append('show_weekends', 'true');
-                    }
+                    // APIには常に明示的に送信（URLパラメータとは別にAPIリクエスト用）
+                    params.append('show_weekdays', this.showWeekdays ? 'true' : 'false');
+                    params.append('show_weekends', this.showWeekends ? 'true' : 'false');
                     if (this.excludeKeywords) {
                         params.append('exclude_keywords', this.excludeKeywords);
                     }
